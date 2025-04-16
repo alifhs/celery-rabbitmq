@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - rabbitmq
+      - postgres
+    environment:
+      - PYTHONPATH=/app
+      # - DATABASE_URL=postgresql://user:password@postgres:5432/orders_db
+    env_file:
+      - .env
+
+  redis:
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - "6377:6379"
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq_broker
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: orders_db
+    ports:
+      - "5433:5432"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: celery_worker
+    command: >
+      sh -c "PYTHONPATH=/app celery -A app.celery_worker.celery_app worker --loglevel=info"
+    depends_on:
+      - redis
+      - rabbitmq
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/orders_db

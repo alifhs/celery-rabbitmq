@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+celery
+redis
+pika
+psycopg2
+sqlalchemy
+alembic  # For database migrations
